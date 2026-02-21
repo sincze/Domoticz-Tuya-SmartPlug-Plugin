@@ -1,40 +1,51 @@
-########################################################################################
-# 	Domoticz Tuya Smart Plug Python Plugin                                       	   #
-#                                                                                      #
-# 	MIT License                                                                        #
-#                                                                                      #
-#	Copyright (c) 2018 tixi 
-#	Modified (C) 2022 Tatroxitum : Updated to tinytuya interface and minor corrections #
+#########################################################################################
+# 	Domoticz Tuya Smart Plug Python Plugin                                       	    #
+#                                                                                       #
+# 	MIT License                                                                         #
+#                                                                                       #
+#	Copyright (c) 2018 tixi                                                             #
+#	Modified (C) 2022 Tatroxitum : Updated to tinytuya interface and minor corrections  #
 #	Modified (C) 2022 Tatroxitum : Catch exception KeyError on update + change heartbeat#
-#                                                                                      #
-#	Permission is hereby granted, free of charge, to any person obtaining a copy       #
-#	of this software and associated documentation files (the "Software"), to deal      #
-#	in the Software without restriction, including without limitation the rights       #
-#	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell          #
-#	copies of the Software, and to permit persons to whom the Software is              #
-#	furnished to do so, subject to the following conditions:                           #
-#                                                                                      #
-#	The above copyright notice and this permission notice shall be included in all     #
-#	copies or substantial portions of the Software.                                    #
-#                                                                                      #
-#	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR         #
-#	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,           #
-#	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE        #
-#	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER             #
-#	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,      #
-#	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE      #
-#	SOFTWARE.                                                                          #
-#                                                                                      #
-########################################################################################
+#	Modified (C) 2025 Tatroxitum : Add tinytuya version parameter to be compatible from #
+#                                  3.1 to 3.5 sockets                                   #
+#                                                                                       #
+#	Permission is hereby granted, free of charge, to any person obtaining a copy        #
+#	of this software and associated documentation files (the "Software"), to deal       #
+#	in the Software without restriction, including without limitation the rights        #
+#	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell           #
+#	copies of the Software, and to permit persons to whom the Software is               #
+#	furnished to do so, subject to the following conditions:                            #
+#                                                                                       #
+#	The above copyright notice and this permission notice shall be included in all      #
+#	copies or substantial portions of the Software.                                     #
+#                                                                                       #
+#	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR          #
+#	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,            #
+#	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE         #
+#	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER              #
+#	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,       # 
+#	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE       #
+#	SOFTWARE.                                                                           #
+#                                                                                       #
+#########################################################################################
 
 
 """
-<plugin key="sincze_tuya_smartplug_plugin" name="Tuya SmartPlug Config" author="tixi_sincze_tatroxitum" version="2.0.1" externallink=" https://github.com/sincze/Domoticz-Tuya-SmartPlug-Plugin">
+<plugin key="sincze_tuya_smartplug_plugin" name="Tuya SmartPlug Config" author="tixi_sincze_tatroxitum" version="2.1.0" externallink=" https://github.com/sincze/Domoticz-Tuya-SmartPlug-Plugin">
 	<params>
 		<param field="Address" label="IP address" width="200px" required="true"/>
-		<param field="Mode1" label="DevID" width="200px" required="true"/>
-		<param field="Mode2" label="Local Key" width="200px" required="true"/>
-		<param field="Mode3" label="DPS" width="200px" required="true" default="1"/>
+		<param field="Username" label="DevID" width="200px" required="true"/>
+		<param field="Password" label="Local Key" width="200px" required="true"/>
+		<param field="Mode1" label="Tiny Version" width="75px">
+			<options>
+				<option label="3.1"   value="3.1"/>
+				<option label="3.2"   value="3.2"/>
+				<option label="3.3"   value="3.3" default="true"/>
+				<option label="3.4"   value="3.4"/>
+				<option label="3.5"   value="3.5"/>
+			</options>
+		</param>
+                <param field="Mode3" label="DPS" width="200px" required="true" default="1"/>
 		<param field="Mode4" label="DPS group" width="200px" required="true" default="None"/>
 		<param field="Mode5" label="ID Amp;Watt;Volt" width="200px" required="true" default="18;19;20"/>
 		<param field="Mode6" label="Debug" width="75px">
@@ -358,6 +369,7 @@ class BasePlugin:
 		self.__address			= None					#IP address of the smartplug
 		self.__devID			= None					#devID of the smartplug
 		self.__localKey			= None					#localKey of the smartplug
+		self.__tinyVersion		= None					#version of the smartplug
 		self.__device			= None					#tinytuya object of the smartplug
 		self.__ampere			= None					#key for Ampere
 		self.__watt				= None					#key for Watt
@@ -382,8 +394,9 @@ class BasePlugin:
 		
 		#get parameters
 		self.__address  = Parameters["Address"]
-		self.__devID    = Parameters["Mode1"]
-		self.__localKey = Parameters["Mode2"]
+		self.__devID    = Parameters["Username"]
+		self.__localKey = Parameters["Password"]
+		self.__tinyVersion = Parameters["Mode1"]
 		self.__ampere, self.__watt, self.__voltage = Parameters["Mode5"].split(";")
 		
 		#set the next heartbeat to now to update data
@@ -451,7 +464,7 @@ class BasePlugin:
 		
 		#create the tinytuya object
 		self.__device = tinytuya.OutletDevice(self.__devID, self.__address, self.__localKey)
-		self.__device.set_version(3.3)#force version to 3.3 (madnatory to work)
+		self.__device.set_version(self.__tinyVersion)
 		
 		#start the connection
 		self.__connection = Domoticz.Connection(Name="Tuya", Transport="TCP/IP", Address=self.__address, Port="6668")
