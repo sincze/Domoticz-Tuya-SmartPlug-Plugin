@@ -517,7 +517,7 @@ class BasePlugin:
 				Domoticz.Debug("Set OnCommand Off")
 			elif(Level==10):
 				Command = 'On'
-				Domoticz.Degug("Set OnCommand On")
+				Domoticz.Debug("Set OnCommand On")
 			else:
 				Domoticz.Error("Undefined Level: " + str(Level))
 				return
